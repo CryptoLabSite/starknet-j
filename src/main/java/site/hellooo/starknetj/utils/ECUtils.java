@@ -31,7 +31,7 @@ public class ECUtils {
     static {
         assert N_ELEMENT_BITS_HASH == 252;
 
-        starknetCurve = new ECCurve.Fp(PRIME, ALPHA, BETA, EC_ORDER, null);
+        starknetCurve = new ECCurve.Fp(PRIME, ALPHA, BETA, EC_ORDER, BigInteger.ONE);
 
 //        https://docs.starkware.co/starkex/crypto/pedersen-hash-function.html
 //        𝑃0=(2089986280348253421170679821480865132823066470938446095505822317253594081284,1713931329540660377023406109199410414810705867260802078187082345529207694986)
@@ -70,13 +70,24 @@ public class ECUtils {
         BigInteger highNibble = element.shiftRight(LOW_PART_BITS.intValue());
         BigInteger lowPart = element.and(LOW_PART_MASK);
 
-        return p1.multiply(lowPart).add(p2.multiply(highNibble));
+        ECPoint lp = p1.multiply(lowPart);
+        ECPoint hp = p2.multiply(highNibble);
+        ECPoint r = lp.add(hp);
+        return r;
     }
 
     public static void main(String[] args) {
+        BigInteger ori = BigInteger.valueOf(1112123);
+        BigInteger shif = ori.shiftRight(1);
+        System.out.println("a: " + ori.toString(10));
+        System.out.println("b: " + shif.toString(10));
+
+        ECPoint point = starknetCurve.createPoint(EC_GENERATOR_POINT[0], EC_GENERATOR_POINT[1]);
+        System.out.println(point.isValid());
+
 //        h(1, 2) should equals 0x5bb9440e27889a364bcb678b1f679ecd1347acdedcbf36e83494f857cc58026
-//        System.out.println(pedersen(new Felt(1), new Felt(2)));
-        BigInteger b = new BigInteger("2592987851775965742543459319508348457290966253241455514226127639100457844774");
-        System.out.println(b.toString(16));
+        System.out.println(pedersen(new Felt(1), new Felt(2)));
+//        BigInteger b = new BigInteger("2592987851775965742543459319508348457290966253241455514226127639100457844774");
+//        System.out.println(b.toString(16));
     }
 }
