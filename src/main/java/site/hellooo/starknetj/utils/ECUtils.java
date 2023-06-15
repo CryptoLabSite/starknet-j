@@ -25,6 +25,8 @@ public class ECUtils {
 
 //    pedersen
     private static final ECPoint[] PEDERSEN_POINTS;
+    private static final BigInteger LOW_PART_BITS = BigInteger.valueOf(248);
+    private static final BigInteger LOW_PART_MASK = BigInteger.ONE.shiftLeft(248).subtract(BigInteger.ONE);
 
     static {
         assert N_ELEMENT_BITS_HASH == 252;
@@ -49,21 +51,32 @@ public class ECUtils {
         };
     }
 
-
-//
-// shift_point + x_low * P_0 + x_high * P1 + y_low * P2  + y_high * P3
-//export function pedersen(x: PedersenArg, y: PedersenArg): string {
-//        let point: ProjectivePoint = PEDERSEN_POINTS[0];
-//        point = pedersenSingle(point, x, PEDERSEN_POINTS1);
-//        point = pedersenSingle(point, y, PEDERSEN_POINTS2);
-//        return extractX(point.toRawBytes(true));
-//    }
-
+//    https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/crypto/signature/fast_pedersen_hash.py
 //    https://docs.starknet.io/documentation/architecture_and_concepts/Hashing/hash-functions/#pedersen_hash
 //    𝐻(𝑎,𝑏)=[𝑃0+𝑎low⋅𝑃1+𝑎high⋅𝑃2+𝑏low⋅𝑃3+𝑏high⋅𝑃4]𝑥
     public static Felt pedersen(Felt a, Felt b) {
+        ECPoint shiftPoint = PEDERSEN_POINTS[0];
+        ECPoint p1 = PEDERSEN_POINTS[1];
+        ECPoint p2 = PEDERSEN_POINTS[2];
+        ECPoint p3 = PEDERSEN_POINTS[3];
+        ECPoint p4 = PEDERSEN_POINTS[4];
 
+        ECPoint resultPoint = shiftPoint.add(processSingleElement(a.getValue(), p1, p2)).add(processSingleElement(b.getValue(), p3, p4));
+        return new Felt(resultPoint.getXCoord().toBigInteger());
     }
 
-    private static Felt pedersenSingle(ECPoint point, Felt value, )
+    public static ECPoint processSingleElement(BigInteger element, ECPoint p1, ECPoint p2) {
+        assert element.compareTo(BigInteger.ZERO) >= 0 && element.compareTo(PRIME) < 0 : "Element integer value is out of range";
+        BigInteger highNibble = element.shiftRight(LOW_PART_BITS.intValue());
+        BigInteger lowPart = element.and(LOW_PART_MASK);
+
+        return p1.multiply(lowPart).add(p2.multiply(highNibble));
+    }
+
+    public static void main(String[] args) {
+//        h(1, 2) should equals 0x5bb9440e27889a364bcb678b1f679ecd1347acdedcbf36e83494f857cc58026
+//        System.out.println(pedersen(new Felt(1), new Felt(2)));
+        BigInteger b = new BigInteger("2592987851775965742543459319508348457290966253241455514226127639100457844774");
+        System.out.println(b.toString(16));
+    }
 }

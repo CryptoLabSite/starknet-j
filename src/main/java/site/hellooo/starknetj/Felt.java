@@ -47,6 +47,10 @@ public class Felt implements Comparable<Felt> {
         return value.toString();
     }
 
+    public BigInteger getValue() {
+        return value;
+    }
+
     @Override
     public int compareTo(@NotNull Felt o) {
         return value.compareTo(o.value);
